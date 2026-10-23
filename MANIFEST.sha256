@@ -2,13 +2,15 @@
 93aa3cf6f9ea4df7f600a2f85f3bc921cca00ca309bdb4ca70281dd3540404f9  ./.kiro/specs/spirit-agent-integration/design.md
 7628da2a1420a70467656b698210067427af7fb64f09cf052f2d0e4d34913053  ./.kiro/specs/spirit-agent-integration/requirements.md
 b8adc71cad8309196ff7f8058f7d013b2a8c3baf11468802d271954bea050b16  ./.kiro/specs/spirit-agent-integration/tasks.md
-cec5234d8d1aeee983652970c9aabf5bf7217e26db23bf9f32f765d8d63b75b4  ./HANDOFF.md
+184c3ea210156e84d36d2c3f13f8471dc12f23591e02ae5bc8ba9f3bfc56f01c  ./HANDOFF.md
 f6124decbfbd2f9591ec8da608447d99ded3042b2c5b08a8c8d25d91687e1a2d  ./docs/01-MVP验证版.md
 80e839b843651d24ac6dd522d20bb2e7dd824bd9bc95b76d941c7c664b59bbd9  ./docs/02-构想版.md
 5769dec9c13470e76c9c492dc9bc0609c1548f9fb48b163afc3e9d13969bacaa  ./docs/handoff/05-assets.md
 14db9600f8be7ab5f29f425a90fb6748954bb2ddf117eb40902f04dbed32e5f0  ./docs/handoff/START-HERE.md
-ac533aaa9d4ee561ea0116c9980d566cace14e6784e0a6c82ac6aeadf9f458f5  ./index.html
+39c4454ca463f69993d1b5e0e3da4300d41d8522c7549c5e7718d4fce721762a  ./index.html
+e22835ce0f7fb540a867fa39eee75a44ba1a458ac85b8e66a03d3c920d874289  ./live/index.html
 9750324bfe1aa63c146f8c72b1143df924466c11c8a5277d7d9225c541a18aaa  ./lunar.js
+2d55208bc8cf882d276d387119c4d44df059439ef5b14e57da38574c79efd4f3  ./server.js
 279776dee941dd413a3e249523bb6e6ae3d051f924e7d62e52db5cd97934830a  ./spirit/app.js
 71461aa43bb0ce3e7c712943984253a53468bbc2dc7c9a096ad86d2d3035c394  ./spirit/assets/blink.png
 5db21bf9bdba365b6698482fadcf722958327ec66fdd8b720ecb5bc205e47b08  ./spirit/assets/enjoy.png

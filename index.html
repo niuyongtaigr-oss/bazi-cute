@@ -145,6 +145,7 @@
       </div>
     </div>
     <button class="ghost" id="save">存下这只</button>
+    <a class="ghost link" href="./live/">和它说说话 →</a>
     <a class="ghost link" href="./spirit/">去它的栖所坐一会儿 →</a>
     <div class="hint" style="margin-top:10px">栖所里住着丙火小曜<br>目前只有这一只有正式形象</div>
     <footer>娱乐向 · 非命理咨询<br>灵魂方程 Soul Equation</footer>
@@ -423,6 +424,21 @@ function render(){
 
   document.getElementById("result").style.display = "block";
   lastState = {p:p, els:els, s:s};
+
+  /* 存画像，供 /live/ 对话页使用 */
+  try{
+    localStorage.setItem("spirit-profile", JSON.stringify({
+      pillars: [0,1,2,3].map(function(i){ return STEMS[cols[i][0]] + BRANCHES[cols[i][1]]; }),
+      dayMaster: STEMS[p.day[0]] + STEM_ELEM[p.day[0]],
+      strength: st.level,
+      animal: s.animal,
+      dominant: s.dominant,
+      missing: s.missing,
+      elements: ELEMS.map(function(e){ return e + (Math.round(els[e]*10)/10); }).join(" "),
+      mood: "idle"
+    }));
+  }catch(e){}
+
   if (window.innerWidth < 620){
     setTimeout(function(){ document.getElementById("result").scrollIntoView({behavior:"smooth",block:"start"}); }, 60);
   }

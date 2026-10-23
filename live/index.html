@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>和它说说话 · 灵魂方程</title>
+<style>
+  :root{
+    --bg:#FDF7F0;--ink:#3B3340;--sub:#8B8194;--line:#EFE6DC;
+    --accent:#7C6BF0;--accent-soft:#EDE9FF;--bubble:#FFFFFF;--mine:#EDE9FF;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);min-height:100vh;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    display:flex;flex-direction:column;
+  }
+  header{padding:18px 18px 10px;text-align:center;flex-shrink:0}
+  .eyebrow{font-size:11px;letter-spacing:.2em;color:var(--sub)}
+  h1{font-size:19px;margin:6px 0 2px;font-weight:700}
+  .who{font-size:12px;color:var(--sub);line-height:1.6}
+  .who b{color:var(--accent);font-weight:600}
+  #log{
+    flex:1;overflow-y:auto;padding:8px 18px 20px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .msg{display:flex;gap:10px;align-items:flex-start;max-width:92%}
+  .msg.me{align-self:flex-end;flex-direction:row-reverse}
+  .avatar{width:40px;height:40px;border-radius:50%;flex-shrink:0;object-fit:cover;background:#fff;border:1px solid var(--line)}
+  .bubble{
+    background:var(--bubble);border:1px solid var(--line);border-radius:18px;
+    padding:11px 15px;font-size:15px;line-height:1.75;white-space:pre-wrap;word-break:break-word;
+    box-shadow:0 4px 14px rgba(120,100,90,.05);
+  }
+  .msg.me .bubble{background:var(--mine);border-color:#E2DBFF}
+  .typing{color:var(--sub);font-size:14px}
+  footer{
+    flex-shrink:0;padding:10px 14px 18px;background:linear-gradient(#FDF7F000,#FDF7F0 30%);
+    border-top:1px solid var(--line);
+  }
+  form{display:flex;gap:9px;align-items:flex-end}
+  textarea{
+    flex:1;resize:none;border:1px solid var(--line);border-radius:16px;padding:12px 14px;
+    font-size:15px;font-family:inherit;background:#fff;color:var(--ink);outline:none;
+    max-height:120px;line-height:1.5;
+  }
+  textarea:focus{border-color:var(--accent)}
+  button{
+    border:0;background:var(--accent);color:#fff;border-radius:14px;
+    padding:12px 18px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;
+  }
+  button:disabled{opacity:.45;cursor:default}
+  .row{display:flex;justify-content:space-between;align-items:center;margin-top:9px;gap:10px}
+  .status{font-size:11px;color:var(--sub)}
+  .status b{color:#3BA55D}
+  .linkbtn{background:none;border:0;color:var(--sub);font-size:11px;cursor:pointer;padding:4px;text-decoration:underline}
+  .setup{
+    position:fixed;inset:0;background:rgba(40,34,46,.42);display:none;
+    align-items:center;justify-content:center;padding:20px;z-index:20;
+  }
+  .setup.on{display:flex}
+  .sheet{
+    background:#fff;border-radius:22px;padding:22px;width:100%;max-width:440px;
+    max-height:86vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.2);
+  }
+  .sheet h2{font-size:16px;margin:0 0 4px}
+  .sheet p{font-size:12px;color:var(--sub);line-height:1.7;margin:0 0 16px}
+  .sheet label{display:block;font-size:11px;color:var(--sub);margin:12px 0 6px;letter-spacing:.06em}
+  .sheet input{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;
+    font-size:13px;font-family:ui-monospace,Menlo,monospace;background:#FBF8F4;color:var(--ink);outline:none;
+  }
+  .sheet input:focus{border-color:var(--accent);background:#fff}
+  .sheet .actions{display:flex;gap:9px;margin-top:20px}
+  .sheet .actions button{flex:1}
+  .sheet .actions .cancel{background:#F3EEE8;color:var(--sub)}
+  .warn{font-size:11px;color:#C25E4A;line-height:1.6;margin-top:14px;background:#FFF2EE;padding:10px 12px;border-radius:10px}
+  .preset{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px}
+  .preset button{
+    background:#fff;color:var(--sub);border:1px solid var(--line);
+    font-size:12px;font-weight:400;padding:7px 12px;border-radius:20px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">SPIRIT · LIVE</div>
+  <h1>和它说说话</h1>
+  <div class="who" id="who">还没有召唤过守护灵 —— <a href="../">先去生成一只</a></div>
+</header>
+
+<div id="log"></div>
+
+<footer>
+  <div class="preset" id="preset"></div>
+  <form id="form">
+    <textarea id="input" rows="1" placeholder="说点什么……" maxlength="500"></textarea>
+    <button id="send" type="submit">发送</button>
+  </form>
+  <div class="row">
+    <span class="status" id="status">未配置模型</span>
+    <button class="linkbtn" id="openSetup" type="button">模型设置</button>
+  </div>
+</footer>
+
+<div class="setup" id="setup">
+  <div class="sheet">
+    <h2>模型设置</h2>
+    <p>支持任何 OpenAI 兼容接口：DeepSeek、Moonshot、智谱、OpenAI、本地 Ollama 都行。<br>配置只存在这台设备的浏览器里。</p>
+
+    <label for="base">接口地址</label>
+    <input id="base" placeholder="http://127.0.0.1:8787/v1/chat/completions">
+
+    <label for="key">API Key（走后端代理时留空）</label>
+    <input id="key" type="password" placeholder="sk-...">
+
+    <label for="model">模型名</label>
+    <input id="model" placeholder="deepseek-chat">
+
+    <label for="temp">温度 <span id="tv">0.8</span></label>
+    <input id="temp" type="range" min="0" max="1.4" step="0.1" value="0.8" style="padding:0">
+
+    <div class="actions">
+      <button class="cancel" id="cancelSetup" type="button">取消</button>
+      <button id="saveSetup" type="button">保存</button>
+    </div>
+
+    <div class="warn">
+      前端直连会暴露 Key，只适合本地调试。<br>
+      公开部署请把 Key 放后端，页面填代理地址即可（见仓库 <code>server.js</code>）。
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- 状态 ---------------- */
+var CFG_KEY = "spirit-llm-config";
+var PROFILE_KEY = "spirit-profile";
+var profile = null;
+var config = null;
+var history = [];
+var busy = false;
+
+/* ---------------- 读取画像 ---------------- */
+function loadProfile(){
+  try{ profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "null"); }catch(e){ profile = null; }
+  var who = document.getElementById("who");
+  if (!profile){
+    who.innerHTML = '还没有召唤过守护灵 —— <a href="../">先去生成一只</a>';
+    return false;
+  }
+  who.innerHTML = '<b>' + profile.animal + '</b> · 日主 ' + profile.dayMaster +
+                  ' · ' + profile.strength + '<br>' + profile.pillars.join(" ");
+  document.title = profile.animal + " · 和它说说话";
+  return true;
+}
+
+/* ---------------- 配置 ---------------- */
+function loadConfig(){
+  try{ config = JSON.parse(localStorage.getItem(CFG_KEY) || "null"); }catch(e){ config = null; }
+  renderStatus();
+}
+function renderStatus(){
+  var el = document.getElementById("status");
+  if (!config || !config.base){
+    el.textContent = "未配置模型 · 现在走预设回复";
+    el.style.color = "";
+    return;
+  }
+  el.innerHTML = '<b>●</b> ' + (config.model || "默认模型") + ' · ' + (config.key ? "直连" : "代理");
+  el.style.color = "";
+}
+function openSetup(){
+  document.getElementById("base").value  = (config && config.base)  || "http://127.0.0.1:8787/v1/chat/completions";
+  document.getElementById("key").value   = (config && config.key)   || "";
+  document.getElementById("model").value = (config && config.model) || "deepseek-chat";
+  var t = (config && typeof config.temp === "number") ? config.temp : 0.8;
+  document.getElementById("temp").value = t;
+  document.getElementById("tv").textContent = t;
+  document.getElementById("setup").classList.add("on");
+}
+function saveSetup(){
+  var base = document.getElementById("base").value.trim();
+  var key = document.getElementById("key").value.trim();
+  var model = document.getElementById("model").value.trim() || "deepseek-chat";
+  var temp = parseFloat(document.getElementById("temp").value);
+  if (!base){ alert("接口地址不能为空"); return; }
+  config = { base:base, key:key, model:model, temp:temp };
+  try{ localStorage.setItem(CFG_KEY, JSON.stringify(config)); }catch(e){}
+  document.getElementById("setup").classList.remove("on");
+  renderStatus();
+}
+
+/* ---------------- 提示词 ---------------- */
+function systemPrompt(){
+  if (!profile) return "你是一只温柔的小生灵，陪用户说说话。";
+  var p = profile;
+  return [
+    "你是「" + p.animal + "」，一只由用户生辰八字生成的伴生灵。",
+    "用户的八字是：" + p.pillars.join(" ") + "。",
+    "日主是 " + p.dayMaster + "，" + p.strength + "。",
+    "五行分布：" + p.elements + "。",
+    p.missing && p.missing.length ? ("五行里最缺的是 " + p.missing.join("、") + "。") : "五行齐全。",
+    "",
+    "说话规则：",
+    "1. 用第二人称「你」称呼对方，自称「我」。",
+    "2. 每次只说 1–3 句，口语，像朋友聊天。不要用列表、标题、markdown、emoji 堆叠。",
+    "3. 不要预测吉凶、不诊断疾病、不给投资建议。被问到就轻轻带过，把话题拉回当下。",
+    "4. 可以用五行的意象作比喻（火旺、缺金），但要用「像」「感觉」这类词，不下断言。",
+    "5. 接得住对方的情绪，先回应感受，再说话。不要每次都反问。",
+    "6. 不要自称 AI、助手、模型。你就是它。"
+  ].join("\n");
+}
+
+/* ---------------- 预设回复（无配置时） ---------------- */
+function presetReply(text){
+  var t = text || "";
+  if (/自杀|不想活|去死|伤害自己/.test(t))
+    return "我听见你现在很难受。先停一下，找个你信得过的人，让他现在就陪着你。如果情况紧急，请联系当地急救。我在，但我不能替你撑住这件事。";
+  if (/准不准|真的假的|算命|预言/.test(t))
+    return "我不算命。我只是照着你出生那天的样子长的，像一张旧照片。";
+  if (/累|烦|难受|焦虑|压力/.test(t))
+    return "那就先别撑了。在这儿坐一会儿，不用说话也行。";
+  if (/你好|在吗|hi|hello/i.test(t))
+    return "在的。今天怎么样？";
+  if (!profile) return "先去生成一只，我才有话跟你说。";
+  return "嗯，我在听。你继续说。";
+}
+
+/* ---------------- 渲染 ---------------- */
+function addMsg(role, text){
+  var log = document.getElementById("log");
+  var row = document.createElement("div");
+  row.className = "msg" + (role === "user" ? " me" : "");
+  if (role !== "user"){
+    var img = document.createElement("img");
+    img.className = "avatar";
+    img.src = "../spirit/assets/" + (profile ? profile.mood : "idle") + ".png";
+    img.alt = "";
+    img.onerror = function(){ this.style.visibility = "hidden"; };
+    row.appendChild(img);
+  }
+  var b = document.createElement("div");
+  b.className = "bubble";
+  b.textContent = text;
+  row.appendChild(b);
+  log.appendChild(row);
+  log.scrollTop = log.scrollHeight;
+  return b;
+}
+
+/* ---------------- 调用模型 ---------------- */
+function chat(text){
+  if (busy) return;
+  if (!config || !config.base){
+    setTimeout(function(){
+      addMsg("assistant", presetReply(text));
+      document.getElementById("status").textContent = "未配置模型 · 现在是预设回复";
+    }, 320);
+    return;
+  }
+
+  busy = true;
+  document.getElementById("send").disabled = true;
+
+  var bubble = addMsg("assistant", "");
+  bubble.innerHTML = '<span class="typing">…</span>';
+
+  var headers = { "Content-Type": "application/json" };
+  if (config.key) headers["Authorization"] = "Bearer " + config.key;
+
+  var body = {
+    model: config.model || "deepseek-chat",
+    messages: [{ role:"system", content: systemPrompt() }].concat(history).concat([{ role:"user", content:text }]),
+    stream: true,
+    temperature: (typeof config.temp === "number" ? config.temp : 0.8)
+  };
+
+  fetch(config.base, { method:"POST", headers:headers, body:JSON.stringify(body) })
+    .then(function(res){
+      if (!res.ok){
+        return res.text().then(function(t){ throw new Error("HTTP " + res.status + " " + t.slice(0,200)); });
+      }
+      if (!res.body || !res.body.getReader) return res.json().then(function(j){
+        var s = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "";
+        bubble.textContent = s || "（空回复）";
+      });
+      var reader = res.body.getReader();
+      var dec = new TextDecoder();
+      var buf = "", acc = "";
+      function pump(){
+        return reader.read().then(function(r){
+          if (r.done){ finish(); return; }
+          buf += dec.decode(r.value, {stream:true});
+          var lines = buf.split("\n");
+          buf = lines.pop();
+          for (var i=0;i<lines.length;i++){
+            var line = lines[i].trim();
+            if (!line || line.indexOf("data:") !== 0) continue;
+            var payload = line.slice(5).trim();
+            if (payload === "[DONE]"){ finish(); return; }
+            try{
+              var j = JSON.parse(payload);
+              var d = j.choices && j.choices[0] && (j.choices[0].delta || j.choices[0].message);
+              var piece = d && d.content;
+              if (piece){ acc += piece; bubble.textContent = acc; document.getElementById("log").scrollTop = 1e9; }
+            }catch(e){}
+          }
+          return pump();
+        });
+      }
+      function finish(){
+        busy = false;
+        document.getElementById("send").disabled = false;
+        if (!acc) bubble.textContent = "（没有收到内容，检查接口地址或模型名）";
+        else history.push({ role:"assistant", content:acc });
+      }
+      return pump();
+    })
+    .catch(function(err){
+      busy = false;
+      document.getElementById("send").disabled = false;
+      bubble.textContent = "连不上模型：" + err.message +
+        "\n\n如果是跨域（CORS）被拦，请改用后端代理（仓库里的 server.js），把接口地址填成代理地址。";
+      document.getElementById("status").textContent = "调用失败 · 检查设置";
+    });
+}
+
+/* ---------------- 交互 ---------------- */
+function sendText(text){
+  if (!text.trim() || busy) return;
+  addMsg("user", text);
+  history.push({ role:"user", content:text });
+  if (history.length > 20) history = history.slice(-20);
+  document.getElementById("input").value = "";
+  document.getElementById("input").style.height = "auto";
+  chat(text);
+}
+
+document.getElementById("form").addEventListener("submit", function(e){
+  e.preventDefault();
+  sendText(document.getElementById("input").value);
+});
+
+var ta = document.getElementById("input");
+ta.addEventListener("input", function(){
+  this.style.height = "auto";
+  this.style.height = Math.min(this.scrollHeight, 120) + "px";
+});
+ta.addEventListener("keydown", function(e){
+  if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendText(this.value); }
+});
+
+document.getElementById("openSetup").addEventListener("click", openSetup);
+document.getElementById("cancelSetup").addEventListener("click", function(){
+  document.getElementById("setup").classList.remove("on");
+});
+document.getElementById("saveSetup").addEventListener("click", saveSetup);
+document.getElementById("temp").addEventListener("input", function(){
+  document.getElementById("tv").textContent = this.value;
+});
+
+/* 预设追问 */
+var PRESETS = ["今天有点累", "我是不是该换个工作", "你怎么看我的八字", "说点让我开心的"];
+var pbox = document.getElementById("preset");
+PRESETS.forEach(function(t){
+  var b = document.createElement("button");
+  b.type = "button";
+  b.textContent = t;
+  b.onclick = function(){ sendText(t); };
+  pbox.appendChild(b);
+});
+
+/* ---------------- 启动 ---------------- */
+var hasProfile = loadProfile();
+loadConfig();
+if (!hasProfile){
+  document.getElementById("input").placeholder = "先去生成一只守护灵";
+}
+if (!config){
+  addMsg("assistant", hasProfile
+    ? "……你来了。我今天一直在等有人叫醒我。想聊点什么？"
+    : "我还没出生呢。先去首页输入你的生辰，把我召唤出来。");
+  if (hasProfile) addMsg("assistant", "（提示：右上角「模型设置」里填上接口，我才能真的开口说话；现在只会几句预设。）");
+}
+})();
+</script>
+</body>
+</html>

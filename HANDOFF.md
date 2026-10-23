@@ -56,6 +56,8 @@
 | 「今天」文案 | ✅ | 按缺失/最旺五行选模板 |
 | 卡片导出 1080×1920 PNG | ⚠️ | 代码完成，**未在真机验证下载行为** |
 | 2D 小曜栖所 | ✅ | 独立页面，含 7 状态、blink、点击/喂食/休息、预设对话 |
+| **真实 LLM 对话** | ✅ | `/live/` 页面，OpenAI 兼容接口，SSE 流式；画像自动注入 system prompt |
+| **本地代理 `server.js`** | ✅ | 零依赖 Node，Key 留服务端，浏览器只连 127.0.0.1:8787 |
 | 手机适配 | ⚠️ | 有 viewport 与响应式，未系统测试 |
 
 ---
@@ -65,6 +67,8 @@
 ```
 bazi_cute/
 ├── index.html          # 主页面：表单 + 四柱 + 五行 + 形象 + 卡片导出（599 行）
+├── live/index.html     # 真实 LLM 对话页（画像从 localStorage 读取）
+├── server.js           # 零依赖 Node 代理：Key 留服务端，SSE 透传
 ├── lunar.js            # lunar-javascript 1.7.7，426KB，本地加载（勿删）
 ├── spirit/             # 2D 小曜栖所（来自外部交接包，原样保留）
 │   ├── index.html
@@ -96,6 +100,8 @@ bazi_cute/
 | D3 | 保留 `spirit/` 原样，不改造 | 它是唯一一张已定稿的视觉资产（丙火小曜），改坏等于毁掉视觉基线 | 重画一套统一的十灵形象（时间不够） |
 | D4 | 允许 `lunar.js` 作为独立文件 | 426KB 内联进 HTML 会让文件不可读 | 坚持严格单文件 |
 | D5 | 不接后端 | 交接包 D01–D07 未决，且演示不需要 | 先搭 Node 代理 + SQLite（原 bazi_cute 的做法） |
+| D6 | LLM 走**代理优先**，前端直连仅作本地调试 | Pages 是公开静态站，Key 进前端等于公开泄露 | 纯前端直连（会暴露 Key，且受 CORS 限制） |
+| D7 | 画像（四柱/日主/强弱/缺五行）写进 system prompt | 让回答"像它"，而不是通用助手口吻 | 让模型自己去算八字（不可控、易错） |
 
 ---
 
@@ -128,7 +134,19 @@ https://niuyongtaigr-oss.github.io/bazi-cute/spirit/   200
 ```
 仓库 `niuyongtaigr-oss/bazi-cute`，分支 `master`，Pages 从 root 部署。
 
-### 7.4 未验证的部分（不要当成已完成）
+### 7.4 LLM 链路（已验证到 mock 层）
+用本地 mock SSE 上游验证过完整链路：
+
+```
+浏览器 /live/  →  POST 127.0.0.1:8787/v1/chat/completions
+               →  server.js 转发（加 Authorization）
+               →  mock 上游逐字吐 SSE
+               →  页面逐字渲染，最终文本：「你今天看着有点累。先坐一会儿。」
+```
+
+**未验证**：真实供应商（DeepSeek/Moonshot/OpenAI）的连通性与 CORS 表现 —— 因为没有真实 Key。接真实 Key 后必须重跑一次。
+
+### 7.5 未验证的部分（不要当成已完成）
 - PNG 实际下载（iOS Safari / Chrome / 桌面）—— **P0**
 - 手机真机布局
 - 卡片在 1080×1920 下中文是否裁切
@@ -177,6 +195,26 @@ python3 -m http.server 8000
 ```
 
 **不要用 `file://` 双击打开来验证卡片下载**，某些浏览器对 `file://` 的 download 属性有限制，会得出错误结论。
+
+### 10.1 打开真实对话（三步）
+
+```bash
+# 1. 起代理（Key 只在这里）
+LLM_KEY=sk-你的key node server.js
+#    换供应商：加 LLM_UPSTREAM=https://api.moonshot.cn/v1/chat/completions LLM_MODEL=moonshot-v1-8k
+#    本地 Ollama：LLM_UPSTREAM=http://127.0.0.1:11434/v1/chat/completions LLM_MODEL=qwen2.5
+
+# 2. 起静态服务
+python3 -m http.server 8000
+
+# 3. 浏览器打开 → 生成守护灵 → 点「和它说说话」
+#    → 右下角「模型设置」→ 接口地址填 http://127.0.0.1:8787/v1/chat/completions
+#    → API Key 留空 → 保存
+```
+
+页面底部状态栏会从「未配置模型」变成「● 模型名 · 代理」。没有配置时自动退回预设回复，不会报错。
+
+**部署到公网时**：`server.js` 不能跟着 Pages 走，需要单独部署（任意 Node 托管），再把地址填进「模型设置」。或者接受"页面走预设、对话演示在本地跑"。
 
 ---
 
