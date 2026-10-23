@@ -241,6 +241,9 @@ function shiShen(dayStem, targetStem){
   return SHISHEN[((targetStem - dayStem) + 10) % 10];
 }
 
+/* 调试出口：供对比测试调用，不影响 UI */
+window.__bazi = { calc:calc, count:countElements, strength:strength, shiShen:shiShen };
+
 /* ---------- 确定性哈希 ---------- */
 function hash(str){
   var h = 2166136261;

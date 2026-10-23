@@ -23,6 +23,21 @@
 const http = require("http");
 const https = require("https");
 const { URL } = require("url");
+const fs = require("fs");
+const path = require("path");
+
+/* 读取同目录 .env（零依赖，不覆盖已有环境变量） */
+try {
+  const envPath = path.join(__dirname, ".env");
+  if (fs.existsSync(envPath)) {
+    fs.readFileSync(envPath, "utf8").split(/\r?\n/).forEach((line) => {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (m && !process.env[m[1]]) {
+        process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+      }
+    });
+  }
+} catch (e) { /* 没有 .env 就用环境变量 */ }
 
 const PORT = process.env.PORT || 8787;
 const UPSTREAM = process.env.LLM_UPSTREAM || "https://api.deepseek.com/chat/completions";
@@ -82,7 +97,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (DEFAULT_MODEL) payload.model = payload.model || DEFAULT_MODEL;
+  if (DEFAULT_MODEL) payload.model = DEFAULT_MODEL;
 
   const body = Buffer.from(JSON.stringify(payload));
   const target = new URL(UPSTREAM);
