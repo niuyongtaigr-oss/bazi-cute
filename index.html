@@ -74,6 +74,8 @@
   .pillar .v span{display:block}
 
   .elem-title{font-size:11px;color:var(--sub);letter-spacing:.14em;margin:22px 0 10px}
+  .meta{font-size:12px;color:var(--sub);text-align:center;line-height:1.9;margin-top:12px}
+  .meta b{color:var(--accent);font-weight:600}
   .bars{display:flex;flex-direction:column;gap:7px}
   .bar{display:flex;align-items:center;gap:9px;font-size:12px}
   .bar .lab{width:16px;color:var(--sub)}
@@ -132,6 +134,7 @@
       <div class="spirit-title" id="sTitle">—</div>
       <div id="sSpirit"></div>
       <div class="pillars" id="pillars"></div>
+      <div class="meta" id="meta"></div>
       <div class="elem-title">五行能量分布</div>
       <div class="bars" id="bars"></div>
       <div class="words">
@@ -148,6 +151,7 @@
   </div>
 </div>
 
+<script src="lunar.js"></script>
 <script>
 (function(){
 "use strict";
@@ -165,76 +169,75 @@ var ELEM_COLOR = {
 };
 var ANIMAL = {"木":"小鹿","火":"小狐","土":"小熊","金":"小猫","水":"小鱼"};
 
-/* ---------- 日柱：儒略日 ---------- */
-function jdn(y,m,d){
-  var a = Math.floor((14 - m)/12);
-  var yy = y + 4800 - a;
-  var mm = m + 12*a - 3;
-  return d + Math.floor((153*mm + 2)/5) + 365*yy +
-         Math.floor(yy/4) - Math.floor(yy/100) + Math.floor(yy/400) - 32045;
-}
-
-/* ---------- 年柱：立春分界（近似 2 月 4 日） ---------- */
-function yearPillar(y,m,d){
-  var yy = y;
-  if (m < 2 || (m === 2 && d < 4)) yy = y - 1;
-  var s = ((yy - 4) % 10 + 10) % 10;
-  var b = ((yy - 4) % 12 + 12) % 12;
-  return [s,b];
-}
-
-/* ---------- 月柱：节气月 + 五虎遁 ---------- */
-/* 每个月的「节」近似日期，用于判定月支起点 */
-var TERM = [
-  {m:1,d:6,branch:1},  {m:2,d:4,branch:2},  {m:3,d:6,branch:3},
-  {m:4,d:5,branch:4},  {m:5,d:6,branch:5},  {m:6,d:6,branch:6},
-  {m:7,d:7,branch:7},  {m:8,d:8,branch:8},  {m:9,d:8,branch:9},
-  {m:10,d:8,branch:10},{m:11,d:7,branch:11},{m:12,d:7,branch:0}
-];
-function monthBranchOf(m,d){
-  /* 找到最后一个「节」早于当前日期的 */
-  var cur = 1; /* 默认 丑，1月6日之前 */
-  for (var i=0;i<TERM.length;i++){
-    var t = TERM[i];
-    if (m > t.m || (m === t.m && d >= t.d)) cur = t.branch;
-  }
-  return cur;
-}
-function monthPillar(y,m,d,yStem){
-  var b = monthBranchOf(m,d);
-  /* 寅月起的偏移：寅=0 ... 丑=11 */
-  var offset = ((b - 2) % 12 + 12) % 12;
-  /* 五虎遁：甲己之年丙作首 -> 寅月天干 = (年干%5)*2+2 */
-  var yinStem = ((yStem % 5) * 2 + 2) % 10;
-  var s = (yinStem + offset) % 10;
-  return [s,b];
-}
-
-/* ---------- 时柱：五鼠遁 ---------- */
-function hourPillar(dayStem, branchIdx){
-  var ziStem = (dayStem % 5) * 2 % 10;
-  return [(ziStem + branchIdx) % 10, branchIdx];
-}
-
-/* ---------- 组装四柱 ---------- */
+/* ---------- 四柱：基于 lunar-javascript（真节气、真历法） ---------- */
+var HOUR_MAP = [0,2,4,6,8,10,12,14,16,18,20,22];
 function calc(y,m,d,hourBranch){
-  var yp = yearPillar(y,m,d);
-  var mp = monthPillar(y,m,d,yp[0]);
-  var j = jdn(y,m,d);
-  var dayIdx = ((j + 49) % 60 + 60) % 60;   /* 0 = 甲子 */
-  var dp = [dayIdx % 10, dayIdx % 12];
-  var hp = hourPillar(dp[0], hourBranch);
-  return {year:yp, month:mp, day:dp, hour:hp, dayIdx:dayIdx};
+  var h = HOUR_MAP[hourBranch];
+  var solar = Solar.fromYmdHms(y, m, d, h, 0, 0);
+  var lunar = solar.getLunar();
+  var ec = lunar.getEightChar();
+  var gz = [ec.getYear(), ec.getMonth(), ec.getDay(), ec.getTime()];
+  var pillars = gz.map(function(s){
+    return [STEMS.indexOf(s.charAt(0)), BRANCHES.indexOf(s.charAt(1))];
+  });
+  return {
+    year:pillars[0], month:pillars[1], day:pillars[2], hour:pillars[3],
+    lunarText: "农历 " + lunar.getYearInGanZhi() + "年 " + lunar.getMonthInChinese() + "月" + lunar.getDayInChinese(),
+    jieQi: (lunar.getPrevJieQi() ? lunar.getPrevJieQi().getName() : "")
+  };
 }
 
-/* ---------- 五行统计 ---------- */
+/* ---------- 五行统计（含地支藏干加权） ---------- */
+var ZHI_CANG = {
+  "子":[["水",1.0]],
+  "丑":[["土",.6],["水",.3],["金",.1]],
+  "寅":[["木",.6],["火",.3],["土",.1]],
+  "卯":[["木",1.0]],
+  "辰":[["土",.6],["木",.3],["水",.1]],
+  "巳":[["火",.6],["土",.3],["金",.1]],
+  "午":[["火",.7],["土",.3]],
+  "未":[["土",.6],["火",.3],["木",.1]],
+  "申":[["金",.6],["水",.3],["土",.1]],
+  "酉":[["金",1.0]],
+  "戌":[["土",.6],["金",.3],["火",.1]],
+  "亥":[["水",.7],["木",.3]]
+};
 function countElements(p){
   var c = {"木":0,"火":0,"土":0,"金":0,"水":0};
-  [p.year,p.month,p.day,p.hour].forEach(function(pill){
-    c[STEM_ELEM[pill[0]]]++;
-    c[BRANCH_ELEM[pill[1]]]++;
+  [p.year,p.month,p.day,p.hour].forEach(function(pl){
+    c[STEM_ELEM[pl[0]]] += 1;
+    (ZHI_CANG[BRANCHES[pl[1]]] || []).forEach(function(x){ c[x[0]] += x[1]; });
   });
   return c;
+}
+
+/* ---------- 身强身弱 ---------- */
+var GEN = {"木":"火","火":"土","土":"金","金":"水","水":"木"};
+var GEN_BY = {"木":"水","火":"木","土":"火","金":"土","水":"金"};
+var CTRL = {"木":"土","火":"金","土":"水","金":"木","水":"火"};
+var CTRL_BY = {"木":"金","火":"水","土":"木","金":"火","水":"土"};
+var MONTH_WX = {"寅":"木","卯":"木","巳":"火","午":"火","辰":"土","戌":"土",
+                "丑":"土","未":"土","申":"金","酉":"金","亥":"水","子":"水"};
+
+function strength(p, els){
+  var day = STEM_ELEM[p.day[0]];
+  var mw = MONTH_WX[BRANCHES[p.month[1]]] || "";
+  var dl = 0;
+  if (mw === day) dl = 3;
+  else if (GEN_BY[day] === mw) dl = 2;
+  else if (CTRL_BY[day] === mw) dl = -2;
+
+  var support = (els[day] || 0) + (els[GEN_BY[day]] || 0);
+  var consume = (els[CTRL[day]] || 0) + (els[GEN[day]] || 0) + (els[CTRL_BY[day]] || 0);
+  var score = 50 + dl*8 + support*5 - consume*3;
+  var level = score >= 70 ? "身强" : (score >= 40 ? "中和" : "身弱");
+  return { level:level, score:Math.round(score), monthWuxing:mw, deLing:dl > 0 };
+}
+
+/* ---------- 十神 ---------- */
+var SHISHEN = ["比肩","劫财","食神","伤官","偏财","正财","七杀","正官","偏印","正印"];
+function shiShen(dayStem, targetStem){
+  return SHISHEN[((targetStem - dayStem) + 10) % 10];
 }
 
 /* ---------- 确定性哈希 ---------- */
@@ -380,6 +383,7 @@ function render(){
   var p = calc(y,m,d,hb);
   var els = countElements(p);
   var s = spiritParams(p, els);
+  var st = strength(p, els);
 
   /* 四柱 */
   var names = ["年","月","日","时"];
@@ -390,6 +394,9 @@ function render(){
           '<div class="v"><span>'+STEMS[cols[i][0]]+'</span><span>'+BRANCHES[cols[i][1]]+'</span></div></div>';
   }
   document.getElementById("pillars").innerHTML = ph;
+  document.getElementById("meta").innerHTML =
+    p.lunarText + " · " + p.jieQi + "后<br>" +
+    "日主 <b>" + STEMS[p.day[0]] + STEM_ELEM[p.day[0]] + "</b> · <b>" + st.level + "</b>（" + st.score + "）";
 
   /* 五行条 */
   var maxv = Math.max.apply(null, ELEMS.map(function(e){return els[e];})) || 1;
@@ -398,7 +405,7 @@ function render(){
     var w = Math.round(els[e]/maxv*100);
     bh += '<div class="bar"><div class="lab">'+e+'</div>' +
           '<div class="track"><div class="fill" style="width:'+w+'%;background:'+ELEM_COLOR[e][0]+'"></div></div>' +
-          '<div class="num">'+els[e]+'</div></div>';
+          '<div class="num">'+(Math.round(els[e]*10)/10)+'</div></div>';
   });
   document.getElementById("bars").innerHTML = bh;
 
