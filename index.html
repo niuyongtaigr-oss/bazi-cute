@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>灵魂方程 · 你的守护灵</title>
+<style>
+  :root{
+    --bg:#FDF7F0; --ink:#3B3340; --sub:#8B8194;
+    --card:#FFFFFF; --line:#EFE6DC;
+    --wood:#9BD3AE; --fire:#FFAE9E; --earth:#F3D08A; --metal:#CFCFE6; --water:#A6D2E8;
+    --accent:#7C6BF0; --accent-soft:#EDE9FF;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:28px 20px 56px}
+  header{text-align:center;margin-bottom:22px}
+  .eyebrow{font-size:12px;letter-spacing:.22em;color:var(--sub);margin-bottom:8px}
+  h1{font-size:26px;margin:0 0 6px;font-weight:700;letter-spacing:.02em}
+  .tagline{font-size:13px;color:var(--sub);line-height:1.7}
+  .panel{
+    background:var(--card);border:1px solid var(--line);border-radius:24px;
+    padding:22px;box-shadow:0 10px 30px rgba(120,100,90,.07);
+  }
+  label{display:block;font-size:12px;color:var(--sub);margin:0 0 7px;letter-spacing:.06em}
+  .field{margin-bottom:16px}
+  input[type=date],select{
+    width:100%;padding:13px 14px;font-size:15px;color:var(--ink);
+    background:#FBF8F4;border:1px solid var(--line);border-radius:14px;
+    font-family:inherit;appearance:none;outline:none;
+  }
+  input[type=date]:focus,select:focus{border-color:var(--accent);background:#fff}
+  button{
+    width:100%;padding:15px;font-size:16px;font-weight:600;font-family:inherit;
+    color:#fff;background:var(--accent);border:0;border-radius:16px;cursor:pointer;
+    transition:transform .12s ease,box-shadow .12s ease;
+    box-shadow:0 8px 20px rgba(124,107,240,.28);
+  }
+  button:active{transform:translateY(1px) scale(.995)}
+  button.ghost{
+    background:#fff;color:var(--accent);border:1.5px solid var(--accent);
+    box-shadow:none;margin-top:12px;
+  }
+  .hint{font-size:11px;color:var(--sub);text-align:center;margin-top:12px;line-height:1.6}
+
+  #result{display:none;margin-top:26px}
+  .spirit-card{
+    background:var(--card);border:1px solid var(--line);border-radius:28px;
+    padding:26px 22px;text-align:center;box-shadow:0 14px 40px rgba(120,100,90,.09);
+    position:relative;overflow:hidden;
+  }
+  .spirit-card::before{
+    content:"";position:absolute;inset:0;background:
+      radial-gradient(circle at 50% 0%, var(--halo, #EDE9FF) 0%, transparent 62%);
+    opacity:.75;pointer-events:none;
+  }
+  .spirit-card > *{position:relative}
+  .spirit-name{font-size:13px;letter-spacing:.18em;color:var(--sub);margin-bottom:2px}
+  .spirit-title{font-size:21px;font-weight:700;margin-bottom:14px}
+  svg.spirit{width:200px;height:200px;display:block;margin:0 auto 6px}
+
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0 6px}
+  .pillar{background:#FBF8F4;border-radius:14px;padding:10px 4px}
+  .pillar .k{font-size:10px;color:var(--sub);letter-spacing:.1em;margin-bottom:5px}
+  .pillar .v{font-size:19px;line-height:1.35;font-weight:600}
+  .pillar .v span{display:block}
+
+  .elem-title{font-size:11px;color:var(--sub);letter-spacing:.14em;margin:22px 0 10px}
+  .bars{display:flex;flex-direction:column;gap:7px}
+  .bar{display:flex;align-items:center;gap:9px;font-size:12px}
+  .bar .lab{width:16px;color:var(--sub)}
+  .bar .track{flex:1;height:9px;background:#F3EEE8;border-radius:6px;overflow:hidden}
+  .bar .fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+  .bar .num{width:14px;text-align:right;color:var(--sub);font-variant-numeric:tabular-nums}
+
+  .words{margin-top:22px;text-align:left}
+  .words p{font-size:14px;line-height:1.95;margin:0 0 14px;color:#4A4152}
+  .words .marker{
+    display:inline-block;font-size:10px;color:var(--accent);background:var(--accent-soft);
+    padding:3px 9px;border-radius:20px;margin-bottom:8px;letter-spacing:.1em;
+  }
+  footer{text-align:center;font-size:11px;color:#B3A9BC;margin-top:26px;line-height:1.8}
+  .shake{animation:shake .4s}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">SOUL EQUATION</div>
+    <h1>灵魂方程 · 守护灵</h1>
+    <div class="tagline">你的出厂设置写在八字里。<br>输入生辰，把它召唤出来。</div>
+  </header>
+
+  <div class="panel">
+    <div class="field">
+      <label for="birth">出生日期</label>
+      <input type="date" id="birth" value="1995-06-15" min="1900-01-01" max="2100-12-31">
+    </div>
+    <div class="field">
+      <label for="hour">出生时辰</label>
+      <select id="hour">
+        <option value="0">子时 · 23:00–00:59</option>
+        <option value="1">丑时 · 01:00–02:59</option>
+        <option value="2">寅时 · 03:00–04:59</option>
+        <option value="3">卯时 · 05:00–06:59</option>
+        <option value="4">辰时 · 07:00–08:59</option>
+        <option value="5">巳时 · 09:00–10:59</option>
+        <option value="6" selected>午时 · 11:00–12:59</option>
+        <option value="7">未时 · 13:00–14:59</option>
+        <option value="8">申时 · 15:00–16:59</option>
+        <option value="9">酉时 · 17:00–18:59</option>
+        <option value="10">戌时 · 19:00–20:59</option>
+        <option value="11">亥时 · 21:00–22:59</option>
+      </select>
+    </div>
+    <button id="summon">召唤我的守护灵</button>
+    <div class="hint">同一个生辰，永远召唤出同一只。<br>这不是抽卡，是你的出厂设置。</div>
+  </div>
+
+  <div id="result">
+    <div class="spirit-card" id="card">
+      <div class="spirit-name" id="sName">—</div>
+      <div class="spirit-title" id="sTitle">—</div>
+      <div id="sSpirit"></div>
+      <div class="pillars" id="pillars"></div>
+      <div class="elem-title">五行能量分布</div>
+      <div class="bars" id="bars"></div>
+      <div class="words">
+        <div class="marker">你的底色</div>
+        <p id="wPersona"></p>
+        <div class="marker">今天</div>
+        <p id="wToday"></p>
+      </div>
+    </div>
+    <button class="ghost" id="save">存下这只</button>
+    <footer>娱乐向 · 非命理咨询<br>灵魂方程 Soul Equation</footer>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- 基础常量 ---------- */
+var STEMS = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
+var BRANCHES = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
+var STEM_ELEM = ["木","木","火","火","土","土","金","金","水","水"];
+var BRANCH_ELEM = ["水","土","木","木","土","火","火","土","金","金","土","水"];
+var ELEMS = ["木","火","土","金","水"];
+var ELEM_COLOR = {
+  "木":["#9BD3AE","#6FBF8F"], "火":["#FFAE9E","#FF8672"],
+  "土":["#F3D08A","#E0AE5C"], "金":["#CFCFE6","#A9A9CC"],
+  "水":["#A6D2E8","#74B4D6"]
+};
+var ANIMAL = {"木":"小鹿","火":"小狐","土":"小熊","金":"小猫","水":"小鱼"};
+
+/* ---------- 日柱：儒略日 ---------- */
+function jdn(y,m,d){
+  var a = Math.floor((14 - m)/12);
+  var yy = y + 4800 - a;
+  var mm = m + 12*a - 3;
+  return d + Math.floor((153*mm + 2)/5) + 365*yy +
+         Math.floor(yy/4) - Math.floor(yy/100) + Math.floor(yy/400) - 32045;
+}
+
+/* ---------- 年柱：立春分界（近似 2 月 4 日） ---------- */
+function yearPillar(y,m,d){
+  var yy = y;
+  if (m < 2 || (m === 2 && d < 4)) yy = y - 1;
+  var s = ((yy - 4) % 10 + 10) % 10;
+  var b = ((yy - 4) % 12 + 12) % 12;
+  return [s,b];
+}
+
+/* ---------- 月柱：节气月 + 五虎遁 ---------- */
+/* 每个月的「节」近似日期，用于判定月支起点 */
+var TERM = [
+  {m:1,d:6,branch:1},  {m:2,d:4,branch:2},  {m:3,d:6,branch:3},
+  {m:4,d:5,branch:4},  {m:5,d:6,branch:5},  {m:6,d:6,branch:6},
+  {m:7,d:7,branch:7},  {m:8,d:8,branch:8},  {m:9,d:8,branch:9},
+  {m:10,d:8,branch:10},{m:11,d:7,branch:11},{m:12,d:7,branch:0}
+];
+function monthBranchOf(m,d){
+  /* 找到最后一个「节」早于当前日期的 */
+  var cur = 1; /* 默认 丑，1月6日之前 */
+  for (var i=0;i<TERM.length;i++){
+    var t = TERM[i];
+    if (m > t.m || (m === t.m && d >= t.d)) cur = t.branch;
+  }
+  return cur;
+}
+function monthPillar(y,m,d,yStem){
+  var b = monthBranchOf(m,d);
+  /* 寅月起的偏移：寅=0 ... 丑=11 */
+  var offset = ((b - 2) % 12 + 12) % 12;
+  /* 五虎遁：甲己之年丙作首 -> 寅月天干 = (年干%5)*2+2 */
+  var yinStem = ((yStem % 5) * 2 + 2) % 10;
+  var s = (yinStem + offset) % 10;
+  return [s,b];
+}
+
+/* ---------- 时柱：五鼠遁 ---------- */
+function hourPillar(dayStem, branchIdx){
+  var ziStem = (dayStem % 5) * 2 % 10;
+  return [(ziStem + branchIdx) % 10, branchIdx];
+}
+
+/* ---------- 组装四柱 ---------- */
+function calc(y,m,d,hourBranch){
+  var yp = yearPillar(y,m,d);
+  var mp = monthPillar(y,m,d,yp[0]);
+  var j = jdn(y,m,d);
+  var dayIdx = ((j + 49) % 60 + 60) % 60;   /* 0 = 甲子 */
+  var dp = [dayIdx % 10, dayIdx % 12];
+  var hp = hourPillar(dp[0], hourBranch);
+  return {year:yp, month:mp, day:dp, hour:hp, dayIdx:dayIdx};
+}
+
+/* ---------- 五行统计 ---------- */
+function countElements(p){
+  var c = {"木":0,"火":0,"土":0,"金":0,"水":0};
+  [p.year,p.month,p.day,p.hour].forEach(function(pill){
+    c[STEM_ELEM[pill[0]]]++;
+    c[BRANCH_ELEM[pill[1]]]++;
+  });
+  return c;
+}
+
+/* ---------- 确定性哈希 ---------- */
+function hash(str){
+  var h = 2166136261;
+  for (var i=0;i<str.length;i++){
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0);
+}
+function pick(h, seed, n){ return Math.floor((h / 7 + seed * 2654435761) % n); }
+
+/* ---------- 文案库 ---------- */
+var PERSONA = [
+  "你是那种先长起来再说的树。别人还在算风险，你已经把根扎下去了。",
+  "你不硬碰，你缠绕。等对方发现的时候，整面墙都已经归你了。",
+  "你一出现，房间就亮了。代价是，你很难假装自己没事。",
+  "你像烛火，照得不远，但照得清。你在意的人，会被你照很久。",
+  "你是山。别人靠过来的时候，你连晃都不晃一下。",
+  "你是土，什么都能长。你见过的东西太多，所以话很少。",
+  "你是刀。你不想伤人，但你确实锋利，而且藏不住。",
+  "你是首饰，不是武器。可你比武器更难被替代。",
+  "你是大水，一直往低处走，但一路都在收东西。",
+  "你是雨。不下的时候没人想起你，下的时候整个世界都湿了。"
+];
+var TODAY = {
+  "木":"今天去做一件从没做过的小事，别规划，别复盘。",
+  "火":"今天说一句你一直没说出口的话。就一句。",
+  "土":"今天把一件拖着的事做完，做得丑也算完。",
+  "金":"今天拒绝一件你不想做的事，不用解释理由。",
+  "水":"今天允许自己什么都不做，一小时，不许有负罪感。",
+  "全":"你什么都不缺。那就把今天的运气，借给别人一次。"
+};
+
+/* ---------- 形象参数 ---------- */
+function spiritParams(p, els){
+  var sorted = ELEMS.slice().sort(function(a,b){
+    if (els[b] !== els[a]) return els[b] - els[a];
+    return ELEMS.indexOf(a) - ELEMS.indexOf(b);
+  });
+  var dominant = sorted[0];
+  var second = sorted[1];
+  var missing = ELEMS.filter(function(e){ return els[e] === 0; });
+  var key = STEMS[p.day[0]] + BRANCHES[p.day[1]] + STEMS[p.year[0]] + BRANCHES[p.hour[1]];
+  var h = hash(key);
+  return {
+    dominant: dominant,
+    second: second,
+    missing: missing,
+    animal: ANIMAL[dominant],
+    c1: ELEM_COLOR[dominant][0],
+    c2: ELEM_COLOR[dominant][1],
+    accent: ELEM_COLOR[second][0],
+    yin: (p.day[0] % 2 === 1),          /* 阳干为偶数位 */
+    ear: p.hour[1] % 6,                  /* 0..5 六种耳型 */
+    tail: pick(h, 3, 3),                 /* 0..2 */
+    spots: pick(h, 5, 4),                /* 0..3 */
+    blush: pick(h, 7, 2) === 1,
+    horn: pick(h, 11, 3),                /* 0..2 */
+    eye: ELEM_COLOR[dominant][1]
+  };
+}
+
+/* ---------- SVG 绘制 ---------- */
+function spiritSVG(s){
+  var id = "g" + Math.floor(Math.random()*1e6);
+  var earPath, tailPath = "", hornPath = "";
+  /* 耳型 */
+  if (s.ear === 0)      earPath = '<ellipse cx="64" cy="66" rx="17" ry="26" transform="rotate(-18 64 66)"/><ellipse cx="136" cy="66" rx="17" ry="26" transform="rotate(18 136 66)"/>';
+  else if (s.ear === 1) earPath = '<circle cx="63" cy="70" r="16"/><circle cx="137" cy="70" r="16"/>';
+  else if (s.ear === 2) earPath = '<path d="M62 84 L50 40 L82 62 Z"/><path d="M138 84 L150 40 L118 62 Z"/>';
+  else if (s.ear === 3) earPath = '<ellipse cx="66" cy="72" rx="12" ry="18" transform="rotate(-32 66 72)"/><ellipse cx="134" cy="72" rx="12" ry="18" transform="rotate(32 134 72)"/>';
+  else if (s.ear === 4) earPath = '<path d="M60 78 Q48 44 74 52 Q84 60 80 78 Z"/><path d="M140 78 Q152 44 126 52 Q116 60 120 78 Z"/>';
+  else                  earPath = '<ellipse cx="68" cy="64" rx="14" ry="22" transform="rotate(-40 68 64)"/><ellipse cx="132" cy="64" rx="14" ry="22" transform="rotate(40 132 64)"/>';
+
+  /* 角 / 天线（阴阳） */
+  if (s.horn === 0) hornPath = '';
+  else if (s.horn === 1) hornPath = '<path d="M96 48 Q92 26 100 18" stroke-linecap="round"/><path d="M104 48 Q108 26 101 18" stroke-linecap="round"/>';
+  else hornPath = '<path d="M94 50 Q84 30 96 22 Q106 30 106 50" opacity=".9"/>';
+
+  /* 尾巴 */
+  if (s.tail === 0) tailPath = '<path d="M158 150 Q182 144 176 168 Q170 184 154 176" fill="none" stroke-width="9" stroke-linecap="round"/>';
+  else if (s.tail === 1) tailPath = '<ellipse cx="172" cy="158" rx="14" ry="18" transform="rotate(24 172 158)"/>';
+  else tailPath = '<path d="M156 152 Q184 158 170 178" fill="none" stroke-width="9" stroke-linecap="round"/>';
+
+  /* 斑点 */
+  var spots = "";
+  var spotPos = [[70,118],[126,112],[104,86]];
+  for (var i=0;i<s.spots;i++){
+    spots += '<circle cx="'+spotPos[i][0]+'" cy="'+spotPos[i][1]+'" r="4.5" opacity=".35"/>';
+  }
+
+  return '' +
+  '<svg class="spirit" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-label="守护灵">' +
+    '<defs>' +
+      '<radialGradient id="'+id+'" cx="50%" cy="38%" r="62%">' +
+        '<stop offset="0%" stop-color="'+s.c1+'"/>' +
+        '<stop offset="100%" stop-color="'+s.c2+'"/>' +
+      '</radialGradient>' +
+    '</defs>' +
+    /* 光晕 */
+    '<circle cx="100" cy="112" r="74" fill="'+s.accent+'" opacity=".14"/>' +
+    /* 耳朵（在头后面） */
+    '<g fill="'+s.c2+'">' + earPath + '</g>' +
+    /* 身体 */
+    '<ellipse cx="100" cy="168" rx="42" ry="26" fill="url(#'+id+')" opacity=".95"/>' +
+    /* 尾巴 */
+    '<g stroke="'+s.c2+'" fill="'+s.c2+'">' + tailPath + '</g>' +
+    /* 头 */
+    '<circle cx="100" cy="112" r="56" fill="url(#'+id+')"/>' +
+    /* 角 */
+    '<g stroke="'+s.accent+'" stroke-width="7" fill="'+s.accent+'">' + hornPath + '</g>' +
+    /* 斑点 */
+    '<g fill="#ffffff">' + spots + '</g>' +
+    /* 腮红 */
+    (s.blush ? '<ellipse cx="68" cy="126" rx="11" ry="7" fill="#FF9AA2" opacity=".5"/><ellipse cx="132" cy="126" rx="11" ry="7" fill="#FF9AA2" opacity=".5"/>' : '') +
+    /* 眼睛 */
+    '<ellipse cx="82" cy="110" rx="8.5" ry="10" fill="#2E2833"/>' +
+    '<ellipse cx="118" cy="110" rx="8.5" ry="10" fill="#2E2833"/>' +
+    '<circle cx="85" cy="106" r="3" fill="#fff"/>' +
+    '<circle cx="121" cy="106" r="3" fill="#fff"/>' +
+    /* 嘴 */
+    '<path d="M94 126 Q100 133 106 126" fill="none" stroke="#2E2833" stroke-width="3.4" stroke-linecap="round"/>' +
+    /* 五行小符号 */
+    '<circle cx="100" cy="24" r="9" fill="'+s.c1+'" opacity=".9"/>' +
+    '<circle cx="100" cy="24" r="4" fill="#fff" opacity=".85"/>' +
+  '</svg>';
+}
+
+/* ---------- 渲染 ---------- */
+var lastState = null;
+
+function render(){
+  var birthEl = document.getElementById("birth");
+  var hourEl  = document.getElementById("hour");
+  if (!birthEl.value){ birthEl.classList.add("shake"); setTimeout(function(){birthEl.classList.remove("shake");},450); return; }
+
+  var parts = birthEl.value.split("-");
+  var y = +parts[0], m = +parts[1], d = +parts[2];
+  var hb = +hourEl.value;
+
+  var p = calc(y,m,d,hb);
+  var els = countElements(p);
+  var s = spiritParams(p, els);
+
+  /* 四柱 */
+  var names = ["年","月","日","时"];
+  var cols = [p.year,p.month,p.day,p.hour];
+  var ph = "";
+  for (var i=0;i<4;i++){
+    ph += '<div class="pillar"><div class="k">'+names[i]+'柱</div>' +
+          '<div class="v"><span>'+STEMS[cols[i][0]]+'</span><span>'+BRANCHES[cols[i][1]]+'</span></div></div>';
+  }
+  document.getElementById("pillars").innerHTML = ph;
+
+  /* 五行条 */
+  var maxv = Math.max.apply(null, ELEMS.map(function(e){return els[e];})) || 1;
+  var bh = "";
+  ELEMS.forEach(function(e){
+    var w = Math.round(els[e]/maxv*100);
+    bh += '<div class="bar"><div class="lab">'+e+'</div>' +
+          '<div class="track"><div class="fill" style="width:'+w+'%;background:'+ELEM_COLOR[e][0]+'"></div></div>' +
+          '<div class="num">'+els[e]+'</div></div>';
+  });
+  document.getElementById("bars").innerHTML = bh;
+
+  /* 文案 */
+  var missingKey = s.missing.length === 1 ? s.missing[0] : "全";
+  document.getElementById("wPersona").textContent = PERSONA[p.day[0]];
+  document.getElementById("wToday").textContent =
+    TODAY[missingKey] || TODAY[s.dominant];
+
+  /* 形象 */
+  document.getElementById("sSpirit").innerHTML = spiritSVG(s);
+  document.getElementById("sName").textContent = s.dominant + "系 · " + ANIMAL[s.dominant];
+  document.getElementById("sTitle").textContent = "「" + STEMS[p.day[0]] + BRANCHES[p.day[1]] + "」日主";
+  document.getElementById("card").style.setProperty("--halo", s.c1);
+
+  document.getElementById("result").style.display = "block";
+  lastState = {p:p, els:els, s:s};
+  if (window.innerWidth < 620){
+    setTimeout(function(){ document.getElementById("result").scrollIntoView({behavior:"smooth",block:"start"}); }, 60);
+  }
+}
+
+/* ---------- 卡片导出 ---------- */
+function wrapText(ctx, text, x, y, maxW, lineH){
+  var line = "", lines = [];
+  for (var i=0;i<text.length;i++){
+    var test = line + text[i];
+    if (ctx.measureText(test).width > maxW && line){
+      lines.push(line); line = text[i];
+    } else { line = test; }
+  }
+  if (line) lines.push(line);
+  lines.forEach(function(l, idx){ ctx.fillText(l, x, y + idx*lineH); });
+  return y + lines.length*lineH;
+}
+
+function saveCard(){
+  if (!lastState) return;
+  var st = lastState, p = st.p, els = st.els, s = st.s;
+  var W = 1080, H = 1920;
+  var cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  var ctx = cv.getContext("2d");
+
+  /* 背景 */
+  var g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0, "#FDF7F0"); g.addColorStop(1, "#F6EEE6");
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+  /* 光晕 */
+  var rg = ctx.createRadialGradient(W/2, 430, 40, W/2, 430, 620);
+  rg.addColorStop(0, s.c1 + "AA"); rg.addColorStop(1, "#FDF7F000");
+  ctx.fillStyle = rg; ctx.fillRect(0,0,W,1100);
+
+  /* 标题 */
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#8B8194";
+  ctx.font = "500 26px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillText("S O U L   E Q U A T I O N", W/2, 118);
+  ctx.fillStyle = "#3B3340";
+  ctx.font = "700 62px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillText("灵魂方程", W/2, 196);
+  ctx.fillStyle = "#8B8194";
+  ctx.font = "400 30px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillText(s.dominant + "系 · " + s.animal, W/2, 250);
+
+  /* 守护灵 */
+  var svgEl = document.querySelector("#sSpirit svg");
+  if (svgEl){
+    var clone = svgEl.cloneNode(true);
+    clone.setAttribute("width","520"); clone.setAttribute("height","520");
+    var data = new XMLSerializer().serializeToString(clone);
+    var img = new Image();
+    img.onload = function(){
+      ctx.drawImage(img, (W-520)/2, 290, 520, 520);
+      drawRest(ctx, W, H, p, els, s);
+      finish(cv);
+    };
+    img.onerror = function(){ drawRest(ctx, W, H, p, els, s); finish(cv); };
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(data);
+  } else {
+    drawRest(ctx, W, H, p, els, s);
+    finish(cv);
+  }
+}
+
+function drawRest(ctx, W, H, p, els, s){
+  ctx.textAlign = "center";
+
+  /* 四柱 */
+  var names = ["年柱","月柱","日柱","时柱"];
+  var cols = [p.year,p.month,p.day,p.hour];
+  var startX = 150, gap = 260;
+  ctx.font = "400 26px 'PingFang SC','Microsoft YaHei',sans-serif";
+  for (var i=0;i<4;i++){
+    var cx = startX + i*gap;
+    ctx.fillStyle = "#B3A9BC";
+    ctx.fillText(names[i], cx, 880);
+    ctx.fillStyle = "#3B3340";
+    ctx.font = "600 54px 'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.fillText(STEMS[cols[i][0]], cx, 936);
+    ctx.fillText(BRANCHES[cols[i][1]], cx, 996);
+    ctx.font = "400 26px 'PingFang SC','Microsoft YaHei',sans-serif";
+  }
+
+  /* 五行条 */
+  var maxv = Math.max.apply(null, ELEMS.map(function(e){return els[e];})) || 1;
+  var by = 1070;
+  ctx.textAlign = "left";
+  ELEMS.forEach(function(e, i){
+    var y = by + i*54;
+    ctx.fillStyle = "#8B8194";
+    ctx.font = "400 28px 'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.fillText(e, 110, y+9);
+    /* 轨道 */
+    ctx.fillStyle = "#F0E8E0";
+    roundRect(ctx, 160, y, 680, 18, 9); ctx.fill();
+    /* 填充 */
+    ctx.fillStyle = ELEM_COLOR[e][0];
+    roundRect(ctx, 160, y, Math.max(18, 680*els[e]/maxv), 18, 9); ctx.fill();
+    ctx.fillStyle = "#8B8194";
+    ctx.fillText(String(els[e]), 866, y+9);
+  });
+
+  /* 文案 */
+  ctx.textAlign = "left";
+  var y = 1360;
+  ctx.fillStyle = "#7C6BF0";
+  ctx.font = "500 24px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillText("你 的 底 色", 110, y);
+  y += 56;
+  ctx.fillStyle = "#4A4152";
+  ctx.font = "400 34px 'PingFang SC','Microsoft YaHei',sans-serif";
+  y = wrapText(ctx, PERSONA[p.day[0]], 110, y, 860, 56);
+
+  y += 44;
+  ctx.fillStyle = "#7C6BF0";
+  ctx.font = "500 24px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillText("今 天", 110, y);
+  y += 56;
+  ctx.fillStyle = "#4A4152";
+  ctx.font = "400 34px 'PingFang SC','Microsoft YaHei',sans-serif";
+  var mk = s.missing.length === 1 ? s.missing[0] : "全";
+  wrapText(ctx, TODAY[mk] || TODAY[s.dominant], 110, y, 860, 56);
+
+  /* 页脚 */
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#C3B9CB";
+  ctx.font = "400 24px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillText("娱乐向 · 非命理咨询", W/2, H-86);
+  ctx.font = "400 22px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillText("灵魂方程 Soul Equation", W/2, H-44);
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function finish(cv){
+  var url = cv.toDataURL("image/png");
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "守护灵-" + Date.now() + ".png";
+  document.body.appendChild(a);
+  if (typeof a.download === "undefined"){
+    alert("这个浏览器不支持直接下载，长按图片保存即可。");
+  }
+  a.click();
+  document.body.removeChild(a);
+}
+
+/* ---------- 绑定 ---------- */
+document.getElementById("summon").addEventListener("click", render);
+document.getElementById("save").addEventListener("click", saveCard);
+document.getElementById("birth").addEventListener("keydown", function(e){
+  if (e.key === "Enter") render();
+});
+
+/* 默认先召唤一次 */
+render();
+
+})();
+</script>
+</body>
+</html>
